@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/graarh/golang-socketio/transport"
+	"github.com/gildas/golang-socketio/transport"
 )
 
 const (
@@ -74,6 +74,7 @@ func (c *Client) Close() {
 Re
 */
 func (c *Client) Redial(url string, tr transport.Transport) {
+	var err error
 	c.initChannel()
 	ticker := time.NewTicker(1 * time.Second)
 	for {
