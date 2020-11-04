@@ -1,14 +1,16 @@
 package gosocketio
 
 import (
-	"github.com/graarh/golang-socketio/transport"
 	"strconv"
+	"time"
+
+	"github.com/graarh/golang-socketio/transport"
 )
 
 const (
-	webSocketProtocol = "ws://"
+	webSocketProtocol       = "ws://"
 	webSocketSecureProtocol = "wss://"
-	socketioUrl       = "/socket.io/?EIO=3&transport=websocket"
+	socketioUrl             = "/socket.io/?EIO=3&transport=websocket"
 )
 
 /**
@@ -21,7 +23,7 @@ type Client struct {
 
 /**
 Get ws/wss url by host and port
- */
+*/
 func GetUrl(host string, port int, secure bool) string {
 	var prefix string
 	if secure {
@@ -54,6 +56,9 @@ func Dial(url string, tr transport.Transport) (*Client, error) {
 	go inLoop(&c.Channel, &c.methods)
 	go outLoop(&c.Channel, &c.methods)
 	go pinger(&c.Channel)
+	c.On(OnDisconnection, func(channel *Channel, message interface{}) {
+		c.Redial(url, tr)
+	})
 
 	return c, nil
 }
@@ -63,4 +68,24 @@ Close client connection
 */
 func (c *Client) Close() {
 	closeChannel(&c.Channel, &c.methods)
+}
+
+/**
+Re
+*/
+func (c *Client) Redial(url string, tr transport.Transport) {
+	c.initChannel()
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			c.conn, err = tr.Connect(url)
+			if err == nil {
+				break
+			}
+		}
+	}
+	go inLoop(&c.Channel, &c.methods)
+	go outLoop(&c.Channel, &c.methods)
+	go pinger(&c.Channel)
 }
