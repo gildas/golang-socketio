@@ -82,11 +82,11 @@ func (c *Client) Redial(url string, tr transport.Transport) {
 		case <-ticker.C:
 			c.conn, err = tr.Connect(url)
 			if err == nil {
-				break
+				go inLoop(&c.Channel, &c.methods)
+				go outLoop(&c.Channel, &c.methods)
+				go pinger(&c.Channel)
+				return
 			}
 		}
 	}
-	go inLoop(&c.Channel, &c.methods)
-	go outLoop(&c.Channel, &c.methods)
-	go pinger(&c.Channel)
 }
